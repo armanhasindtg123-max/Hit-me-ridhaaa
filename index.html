@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Ridha</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- MediaPipe Hands Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-color: #fff0f5;
+            --primary: #ffb7b2;
+            --secondary: #ff9aa2;
+            --text: #6d6875;
+            --accent: #b5ead7;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #fff, var(--bg-color));
+            font-family: 'Fredoka', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text);
+        }
+
+        /* Container for everything */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Webcam Feed (Hidden but active) */
+        .input_video {
+            display: none;
+        }
+
+        /* The Canvas for Hearts & Hand Tracking */
+        #output_canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        /* Top HUD */
+        .hud {
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+
+        .counter-label {
+            font-size: 1.2rem;
+            color: #b5b5b5;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .counter-value {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        /* The Avatar (CSS Construction) */
+        .avatar-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        .avatar-body {
+            width: 160px;
+            height: 160px;
+            background-color: #a0c4ff;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 
+                inset -10px -10px 20px rgba(0,0,0,0.1),
+                0 10px 30px rgba(160, 196, 255, 0.4);
+            transition: transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .face {
+            position: relative;
+            top: 0px;
+            transition: top 0.2s;
+        }
+
+        .eyes {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 15px;
+        }
+
+        .eye {
+            width: 18px;
+            height: 18px;
+            background: #4a4e69;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        /* Blinking animation */
+        .eye::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 0%;
+            background: #a0c4ff;
+            animation: blink 4s infinite;
+        }
+
+        @keyframes blink {
+            0%, 96%, 100% { height: 0%; }
+            98% { height: 100%; }
+        }
+
+        .mouth {
+            width: 30px;
+            height: 15px;
+            border-bottom: 4px solid #4a4e69;
+            border-radius: 0 0 20px 20px;
+            margin: 0 auto;
+            transition: all 0.3s;
+        }
+
+        /* Heart Shield/Meter */
+        .heart-shield {
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            border: 4px solid var(--primary);
+            border-radius: 50%;
+            opacity: 0.5;
+            transform: scale(1);
+            transition: all 0.3s;
+        }
+
+        /* Animations */
+        .wobble { animation: wobbleAnim 0.4s ease-out; }
+        .hit { animation: hitAnim 0.2s ease-in-out; }
+        
+        @keyframes wobbleAnim {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.1, 0.9) translate(-5px, 5px); }
+            50% { transform: scale(0.9, 1.1) translate(5px, -5px); }
+            75% { transform: scale(1.05, 0.95); }
+        }
+
+        @keyframes hitAnim {
+            0% { border-color: var(--primary); }
+            50% { border-color: #ff6b6b; opacity: 1; }
+            100% { border-color: var(--primary); }
+        }
+
+        /* Message Bubbles */
+        .message {
+            position: absolute;
+            top: -80px;
+            width: 300px;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #4a4e69;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .message.show { opacity: 1; transform: translateY(0); }
+
+        /* Loading / Start Screen */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        button {
+            background: var(--primary);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.2rem;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(255, 183, 178, 0.6);
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.05); }
+
+        .hidden { display: none !important; }
+        .fade-out { opacity: 0; pointer-events: none; transition: opacity 1s; }
+
+        /* End Screen Text */
+        .final-message {
+            max-width: 600px;
+            font-size: 1.5rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Webcam Feed (Processed by MediaPipe, not shown directly) -->
+    <video class="input_video"></video>
+
+    <div id="game-container">
+        <!-- Canvas for Particles -->
+        <canvas id="output_canvas"></canvas>
+
+        <!-- Avatar Layer -->
+        <div class="avatar-container" id="avatar-container">
+            <div class="message" id="float-message"></div>
+            <div class="heart-shield" id="shield"></div>
+            <div class="avatar-body" id="avatar">
+                <div class="face">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth" id="mouth"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Layer -->
+        <div id="ui-layer">
+            <div class="hud" id="hud">
+                <div class="counter-label">Feelings I Didn't Understand</div>
+                <div class="counter-value" id="score">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start / Permission Screen -->
+    <div id="overlay">
+        <h1>Hey Ridha...</h1>
+        <p>I need you to show me something.</p>
+        <p style="font-size: 0.9rem; color: #999;">(Allow camera access to use your hand)</p>
+        <button onclick="startExperience()">I'm Ready</button>
+        <p style="margin-top: 10px; font-size: 0.8rem;">👆 Point your finger at me to begin</p>
+    </div>
+
+    <!-- End Screen -->
+    <div id="overlay-end" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,240,245,0.95); z-index: 20; flex-direction: column; justify-content: center; align-items: center; text-align: center; opacity: 0; transition: opacity 2s;">
+        <div class="final-message">
+            Your feelings hit me harder than anything.<br>
+            I understand you better now.
+        </div>
+        <button onclick="window.location.href='mailto:?subject=I\'m ready to talk&body=Hey Arman...'">Talk to me when you're ready</button>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const MAX_SCORE = 50;
+        let score = 0;
+        let isGameActive = false;
+        let lastShotTime = 0;
+        const SHOT_DELAY = 150; // ms between hearts
+        
+        // --- Elements ---
+        const videoElement = document.getElementsByClassName('input_video')[0];
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const avatar = document.getElementById('avatar');
+        const shield = document.getElementById('shield');
+        const scoreDisplay = document.getElementById('score');
+        const floatMsg = document.getElementById('float-message');
+        const mouth = document.getElementById('mouth');
+        const hud = document.getElementById('hud');
+        
+        // --- Audio Context ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playPopSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(400 + Math.random() * 200, audioCtx.currentTime);
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playHitSound() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.type = 'triangle';
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // --- Game State ---
+        let bullets = [];
+        let particles = [];
+        let handPosition = { x: 0, y: 0, visible: false };
+        
+        // Messages based on score milestones
+        const dialogues = [
+            { at: 5, text: "Okay... that one hit." },
+            { at: 15, text: "I deserved that." },
+            { at: 25, text: "I wasn't listening properly." },
+            { at: 35, text: "I finally felt what you felt." },
+            { at: 45, text: "I'm sorry, Ridha." }
+        ];
+
+        // --- Core Logic ---
+
+        function startExperience() {
+            document.getElementById('overlay').classList.add('hidden');
+            isGameActive = true;
+            resizeCanvas();
+            initCamera();
+            loop();
+        }
+
+        function resizeCanvas() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- MediaPipe Setup ---
+        function onResults(results) {
+            if (!isGameActive) return;
+
+            // Clear canvas
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            
+            // Only tracking one hand
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // Get Index Finger Tip (Landmark 8)
+                const indexTip = landmarks[8];
+                
+                // Convert to canvas coordinates (Mirroring handled by CSS on canvas, but logic needs inversion)
+                // Since canvas is scaleX(-1), x=0 is right visual, x=1 is left visual.
+                // We calculate logic based on raw (0-1), draw based on raw.
+                
+                handPosition.x = indexTip.x * canvasElement.width;
+                handPosition.y = indexTip.y * canvasElement.height;
+                handPosition.visible = true;
+
+                // Draw a guide cursor
+                canvasCtx.beginPath();
+                canvasCtx.arc(handPosition.x, handPosition.y, 10, 0, 2 * Math.PI);
+                canvasCtx.fillStyle = "rgba(255, 183, 178, 0.8)";
+                canvasCtx.fill();
+
+                // Auto-Shoot logic: If hand is visible, shoot hearts
+                const now = Date.now();
+                if (now - lastShotTime > SHOT_DELAY) {
+                    spawnBullet(handPosition.x, handPosition.y);
+                    lastShotTime = now;
+                    playPopSound();
+                }
+
+            } else {
+                handPosition.visible = false;
+            }
+
+            // Draw Bullets & Particles
+            updatePhysics();
+            
+            canvasCtx.restore();
+        }
+
+        const hands = new Hands({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }});
+        
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        
+        hands.onResults(onResults);
+
+        function initCamera() {
+            const camera = new Camera(videoElement, {
+                onFrame: async () => {
+                    await hands.send({image: videoElement});
+                },
+                width: 1280,
+                height: 720
+            });
+            camera.start();
+        }
+
+        // --- Physics & Drawing ---
+
+        function spawnBullet(x, y) {
+            // Target center screen
+            const targetX = canvasElement.width / 2;
+            const targetY = canvasElement.height / 2;
+            
+            // Calculate angle
+            const angle = Math.atan2(targetY - y, targetX - x);
+            const speed = 10;
+
+            bullets.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: 20,
+                color: `hsl(${340 + Math.random()*20}, 100%, 80%)`
+            });
+        }
+
+        function drawHeart(x, y, size, color) {
+            canvasCtx.fillStyle = color;
+            canvasCtx.beginPath();
+            const topCurveHeight = size * 0.3;
+            canvasCtx.moveTo(x, y + topCurveHeight);
+            // top left curve
+            canvasCtx.bezierCurveTo(
+                x, y, 
+                x - size / 2, y, 
+                x - size / 2, y + topCurveHeight
+            );
+            // bottom left curve
+            canvasCtx.bezierCurveTo(
+                x - size / 2, y + (size + topCurveHeight) / 2, 
+                x, y + (size + topCurveHeight) / 2, 
+                x, y + size
+            );
+            // bottom right curve
+            canvasCtx.bezierCurveTo(
+                x, y + (size + topCurveHeight) / 2, 
+                x + size / 2, y + (size + topCurveHeight) / 2, 
+                x + size / 2, y + topCurveHeight
+            );
+            // top right curve
+            canvasCtx.bezierCurveTo(
+                x + size / 2, y, 
+                x, y, 
+                x, y + topCurveHeight
+            );
+            canvasCtx.fill();
+        }
+
+        function updatePhysics() {
+            const centerX = canvasElement.width / 2;
+            const centerY = canvasElement.height / 2;
+            const avatarRadius = 80; // approx
+
+            // Update Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.x += b.vx;
+                b.y += b.vy;
+
+                drawHeart(b.x, b.y, b.size, b.color);
+
+                // Collision detection with center Avatar
+                const dist = Math.hypot(b.x - centerX, b.y - centerY);
+                
+                if (dist < avatarRadius) {
+                    // HIT!
+                    handleHit();
+                    bullets.splice(i, 1);
+                    
+                    // Spawn particles
+                    for(let j=0; j<5; j++) {
+                        particles.push({
+                            x: b.x,
+                            y: b.y,
+                            vx: (Math.random() - 0.5) * 5,
+                            vy: (Math.random() - 0.5) * 5,
+                            life: 1.0
+                        });
+                    }
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05;
+                
+                canvasCtx.globalAlpha = p.life;
+                canvasCtx.fillStyle = "#ffb7b2";
+                canvasCtx.beginPath();
+                canvasCtx.arc(p.x, p.y, 3, 0, Math.PI*2);
+                canvasCtx.fill();
+                canvasCtx.globalAlpha = 1.0;
+
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        // --- Logic Interactions ---
+
+        function handleHit() {
+            if (!isGameActive) return;
+
+            score++;
+            scoreDisplay.innerText = score;
+            
+            // Visual reactions
+            avatar.classList.remove('wobble');
+            shield.classList.remove('hit');
+            void avatar.offsetWidth; // Trigger reflow
+            avatar.classList.add('wobble');
+            shield.classList.add('hit');
+            playHitSound();
+
+            // Avatar expression change
+            if(score % 2 === 0) mouth.style.borderRadius = "20px 20px 0 0"; // Frown
+            else mouth.style.borderRadius = "0 0 20px 20px"; // Neutral
+
+            // Decrease shield opacity to simulate cracking
+            let shieldHealth = 1 - (score / MAX_SCORE);
+            shield.style.opacity = Math.max(0.1, shieldHealth);
+
+            // Check for dialogue trigger
+            const dialogue = dialogues.find(d => d.at === score);
+            if (dialogue) {
+                showFloatMessage(dialogue.text);
+            }
+
+            if (score >= MAX_SCORE) {
+                endGame();
+            }
+        }
+
+        function showFloatMessage(text) {
+            floatMsg.innerText = text;
+            floatM
