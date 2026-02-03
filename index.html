@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>For Ridha</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- MediaPipe Hands Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -14,11 +13,18 @@
 
     <style>
         :root {
-            --bg-color: #fff0f5;
-            --primary: #ffb7b2;
-            --secondary: #ff9aa2;
-            --text: #6d6875;
-            --accent: #b5ead7;
+            --bg-color: #fdf6f6;
+            --blob-color: #a2d2ff;
+            --blob-shadow: #8bbce8;
+            --text-color: #555b6e;
+            --accent-pink: #ffafcc;
+            --accent-dark: #cdb4db;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -27,30 +33,185 @@
             width: 100vw;
             height: 100vh;
             background: radial-gradient(circle at center, #fff, var(--bg-color));
-            font-family: 'Fredoka', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             overflow: hidden;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            color: var(--text);
+            justify-content: center;
+            color: var(--text-color);
         }
 
-        /* Container for everything */
-        #game-container {
-            position: relative;
+        /* ========== STAGE CONTAINERS ========== */
+        .stage-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
+            transition: opacity 2s ease;
+        }
+
+        .stage-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ========== STAGE 1: CLICK/TAP EXPERIENCE ========== */
+        #stage1 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .counter-container {
+            position: absolute;
+            top: 10%;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .counter-label {
+            font-size: 1rem;
+            color: #888;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .counter-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-pink);
+        }
+
+        .scene {
+            position: relative;
+            width: 300px;
+            height: 300px;
             display: flex;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
         }
 
-        /* The Webcam Feed (Hidden but active) */
+        .avatar {
+            width: 180px;
+            height: 180px;
+            background-color: var(--blob-color);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 
+                inset -10px -10px 20px var(--blob-shadow),
+                0 20px 40px rgba(162, 210, 255, 0.4);
+            transition: transform 0.1s ease-out, border-radius 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .eyes {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 10px;
+        }
+
+        .eye {
+            width: 15px;
+            height: 15px;
+            background: #333;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .eye::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: -5px;
+            width: 25px;
+            height: 10px;
+            background: rgba(255, 100, 100, 0.1);
+            border-radius: 50%;
+        }
+
+        .mouth {
+            width: 20px;
+            height: 10px;
+            border-bottom: 3px solid #333;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .squash { animation: squashAnim 0.3s ease-out; }
+        
+        @keyframes squashAnim {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.2, 0.7) translateY(10px); }
+            60% { transform: scale(0.9, 1.1) translateY(-10px); }
+            80% { transform: scale(1.05, 0.95); }
+            100% { transform: scale(1); }
+        }
+
+        .shake { animation: shakeAnim 0.3s ease-in-out; }
+        
+        @keyframes shakeAnim {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            50% { transform: translateX(10px) rotate(5deg); }
+            75% { transform: translateX(-5px) rotate(-2deg); }
+            100% { transform: translateX(0); }
+        }
+
+        .avatar.dizzy .eye {
+            height: 3px;
+            width: 15px;
+            border-radius: 0;
+            transform: rotate(45deg);
+        }
+        .avatar.dizzy .eye:last-child {
+            transform: rotate(-45deg);
+        }
+        .avatar.dizzy .mouth {
+            width: 15px;
+            height: 15px;
+            border: 3px solid #333;
+            border-radius: 50%;
+            background: transparent;
+        }
+
+        .message-bubble {
+            position: absolute;
+            pointer-events: none;
+            color: var(--text-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: floatUp 2s forwards;
+            width: 100%;
+            text-align: center;
+            top: -60px;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+            20% { opacity: 1; transform: translateY(0) scale(1); }
+            80% { opacity: 1; transform: translateY(-10px); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+
+        /* ========== STAGE 2: HAND TRACKING ========== */
+        #stage2 {
+            font-family: 'Fredoka', sans-serif;
+        }
+
         .input_video {
             display: none;
         }
 
-        /* The Canvas for Hearts & Hand Tracking */
         #output_canvas {
             position: absolute;
             top: 0;
@@ -58,10 +219,9 @@
             width: 100%;
             height: 100%;
             z-index: 2;
-            transform: scaleX(-1); /* Mirror effect */
+            transform: scaleX(-1);
         }
 
-        /* UI Overlay */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -78,26 +238,11 @@
             box-sizing: border-box;
         }
 
-        /* Top HUD */
         .hud {
             text-align: center;
             transition: opacity 0.5s;
         }
 
-        .counter-label {
-            font-size: 1.2rem;
-            color: #b5b5b5;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .counter-value {
-            font-size: 2.5rem;
-            color: var(--secondary);
-            font-weight: 600;
-        }
-
-        /* The Avatar (CSS Construction) */
         .avatar-container {
             position: absolute;
             top: 50%;
@@ -109,7 +254,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            pointer-events: none; /* Let clicks pass through */
+            pointer-events: none;
         }
 
         .avatar-body {
@@ -133,56 +278,17 @@
             transition: top 0.2s;
         }
 
-        .eyes {
-            display: flex;
-            gap: 40px;
-            margin-bottom: 15px;
-        }
-
-        .eye {
-            width: 18px;
-            height: 18px;
-            background: #4a4e69;
-            border-radius: 50%;
-            position: relative;
-        }
-
-        /* Blinking animation */
-        .eye::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 0%;
-            background: #a0c4ff;
-            animation: blink 4s infinite;
-        }
-
-        @keyframes blink {
-            0%, 96%, 100% { height: 0%; }
-            98% { height: 100%; }
-        }
-
-        .mouth {
-            width: 30px;
-            height: 15px;
-            border-bottom: 4px solid #4a4e69;
-            border-radius: 0 0 20px 20px;
-            margin: 0 auto;
-            transition: all 0.3s;
-        }
-
-        /* Heart Shield/Meter */
         .heart-shield {
             position: absolute;
             width: 220px;
             height: 220px;
-            border: 4px solid var(--primary);
+            border: 4px solid var(--accent-pink);
             border-radius: 50%;
             opacity: 0.5;
             transform: scale(1);
             transition: all 0.3s;
         }
 
-        /* Animations */
         .wobble { animation: wobbleAnim 0.4s ease-out; }
         .hit { animation: hitAnim 0.2s ease-in-out; }
         
@@ -194,12 +300,11 @@
         }
 
         @keyframes hitAnim {
-            0% { border-color: var(--primary); }
+            0% { border-color: var(--accent-pink); }
             50% { border-color: #ff6b6b; opacity: 1; }
-            100% { border-color: var(--primary); }
+            100% { border-color: var(--accent-pink); }
         }
 
-        /* Message Bubbles */
         .message {
             position: absolute;
             top: -80px;
@@ -217,120 +322,178 @@
         }
         .message.show { opacity: 1; transform: translateY(0); }
 
-        /* Loading / Start Screen */
-        #overlay {
+        /* ========== OVERLAYS ========== */
+        .overlay {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95);
-            z-index: 10;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            z-index: 10;
+            transition: opacity 1s;
             text-align: center;
         }
 
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            color: var(--accent-dark);
+            margin-bottom: 20px;
+        }
+
         button {
-            background: var(--primary);
+            background: var(--blob-color);
             border: none;
-            padding: 15px 40px;
+            padding: 15px 30px;
             border-radius: 50px;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-family: inherit;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 20px;
-            box-shadow: 0 5px 15px rgba(255, 183, 178, 0.6);
-            transition: transform 0.2s;
+            box-shadow: 0 5px 15px rgba(162, 210, 255, 0.6);
+            transition: transform 0.2s, box-shadow 0.2s;
+            pointer-events: auto;
         }
-        button:hover { transform: scale(1.05); }
 
-        .hidden { display: none !important; }
-        .fade-out { opacity: 0; pointer-events: none; transition: opacity 1s; }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(162, 210, 255, 0.8);
+        }
 
-        /* End Screen Text */
-        .final-message {
-            max-width: 600px;
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .final-text {
             font-size: 1.5rem;
-            line-height: 1.6;
+            color: var(--text-color);
             margin-bottom: 30px;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        .hint {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #aaa;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Webcam Feed (Processed by MediaPipe, not shown directly) -->
-    <video class="input_video"></video>
+    <!-- ========== STAGE 1: CLICK/TAP EXPERIENCE ========== -->
+    <div id="stage1" class="stage-container">
+        <div class="overlay" id="intro-screen">
+            <h1>Hey Ridha...</h1>
+            <button onclick="startStage1()">I need to make it up to you</button>
+            <div class="hint">(Make sure your sound is on 🔈)</div>
+        </div>
 
-    <div id="game-container">
-        <!-- Canvas for Particles -->
-        <canvas id="output_canvas"></canvas>
+        <div class="counter-container" id="counter-ui">
+            <div class="counter-label">Hits I Deserved</div>
+            <div class="counter-value" id="hits">0</div>
+        </div>
 
-        <!-- Avatar Layer -->
-        <div class="avatar-container" id="avatar-container">
-            <div class="message" id="float-message"></div>
-            <div class="heart-shield" id="shield"></div>
-            <div class="avatar-body" id="avatar">
-                <div class="face">
-                    <div class="eyes">
-                        <div class="eye"></div>
-                        <div class="eye"></div>
+        <div class="scene">
+            <div class="avatar" id="arman-avatar">
+                <div class="eyes">
+                    <div class="eye"></div>
+                    <div class="eye"></div>
+                </div>
+                <div class="mouth"></div>
+            </div>
+        </div>
+        
+        <div class="hint" id="game-hint">Tap me</div>
+
+        <div class="overlay hidden" id="transition-screen">
+            <div class="final-text">I can take the hits.<br>Now let me show you something deeper.</div>
+            <button onclick="transitionToStage2()">I'm ready to understand</button>
+        </div>
+    </div>
+
+    <!-- ========== STAGE 2: HAND TRACKING EXPERIENCE ========== -->
+    <div id="stage2" class="stage-container stage-hidden">
+        <video class="input_video"></video>
+
+        <div id="game-container">
+            <canvas id="output_canvas"></canvas>
+
+            <div class="avatar-container" id="avatar-container">
+                <div class="message" id="float-message"></div>
+                <div class="heart-shield" id="shield"></div>
+                <div class="avatar-body" id="avatar2">
+                    <div class="face">
+                        <div class="eyes">
+                            <div class="eye"></div>
+                            <div class="eye"></div>
+                        </div>
+                        <div class="mouth" id="mouth2"></div>
                     </div>
-                    <div class="mouth" id="mouth"></div>
+                </div>
+            </div>
+
+            <div id="ui-layer">
+                <div class="hud" id="hud">
+                    <div class="counter-label">Feelings I Didn't Understand</div>
+                    <div class="counter-value" id="score">0</div>
                 </div>
             </div>
         </div>
 
-        <!-- UI Layer -->
-        <div id="ui-layer">
-            <div class="hud" id="hud">
-                <div class="counter-label">Feelings I Didn't Understand</div>
-                <div class="counter-value" id="score">0</div>
+        <div class="overlay" id="stage2-intro">
+            <h1>Now show me your feelings...</h1>
+            <p>Point your finger at me.</p>
+            <p style="font-size: 0.9rem; color: #999;">(Allow camera access)</p>
+            <button onclick="startStage2()">I'm Ready</button>
+        </div>
+
+        <div class="overlay hidden" id="overlay-end">
+            <div class="final-text">
+                Your feelings hit me harder than anything.<br>
+                I understand you better now.
             </div>
+            <button onclick="finishExperience()">Talk to me when you're ready</button>
         </div>
-    </div>
-
-    <!-- Start / Permission Screen -->
-    <div id="overlay">
-        <h1>Hey Ridha...</h1>
-        <p>I need you to show me something.</p>
-        <p style="font-size: 0.9rem; color: #999;">(Allow camera access to use your hand)</p>
-        <button onclick="startExperience()">I'm Ready</button>
-        <p style="margin-top: 10px; font-size: 0.8rem;">👆 Point your finger at me to begin</p>
-    </div>
-
-    <!-- End Screen -->
-    <div id="overlay-end" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,240,245,0.95); z-index: 20; flex-direction: column; justify-content: center; align-items: center; text-align: center; opacity: 0; transition: opacity 2s;">
-        <div class="final-message">
-            Your feelings hit me harder than anything.<br>
-            I understand you better now.
-        </div>
-        <button onclick="window.location.href='mailto:?subject=I\'m ready to talk&body=Hey Arman...'">Talk to me when you're ready</button>
     </div>
 
     <script>
-        // --- Configuration ---
-        const MAX_SCORE = 50;
-        let score = 0;
-        let isGameActive = false;
-        let lastShotTime = 0;
-        const SHOT_DELAY = 150; // ms between hearts
-        
-        // --- Elements ---
-        const videoElement = document.getElementsByClassName('input_video')[0];
-        const canvasElement = document.getElementById('output_canvas');
-        const canvasCtx = canvasElement.getContext('2d');
-        const avatar = document.getElementById('avatar');
-        const shield = document.getElementById('shield');
-        const scoreDisplay = document.getElementById('score');
-        const floatMsg = document.getElementById('float-message');
-        const mouth = document.getElementById('mouth');
-        const hud = document.getElementById('hud');
-        
-        // --- Audio Context ---
+        // ========== AUDIO SETUP ==========
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
+
+        function playSoftThud() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(100 + Math.random() * 50, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
 
         function playPopSound() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -359,25 +522,145 @@
             osc.stop(audioCtx.currentTime + 0.2);
         }
 
-        // --- Game State ---
+        // ========== STAGE 1: CLICK/TAP LOGIC ==========
+        const messages = [
+            "Oof... yeah, fair point.",
+            "I deserved that one.",
+            "I didn't listen properly, did I?",
+            "I'm sorry, Ridha.",
+            "I was being stubborn.",
+            "I understand now how it hurt.",
+            "I promise to do better.",
+            "I miss us being okay.",
+            "One more for good measure?",
+            "Okay, okay, I get it..."
+        ];
+
+        const MAX_HITS = 12;
+        let hits = 0;
+        let isStage1Active = false;
+        
+        const avatar = document.getElementById('arman-avatar');
+        const counterUI = document.getElementById('counter-ui');
+        const hitsDisplay = document.getElementById('hits');
+        const introScreen = document.getElementById('intro-screen');
+        const transitionScreen = document.getElementById('transition-screen');
+        const gameHint = document.getElementById('game-hint');
+        const scene = document.querySelector('.scene');
+
+        function startStage1() {
+            introScreen.classList.add('hidden');
+            setTimeout(() => {
+                introScreen.style.display = 'none';
+                counterUI.style.opacity = 1;
+                isStage1Active = true;
+            }, 1000);
+        }
+
+        function handleInteraction(e) {
+            if (!isStage1Active) return;
+            if (e.type === 'touchstart') e.preventDefault();
+
+            hits++;
+            hitsDisplay.textContent = hits;
+            gameHint.style.opacity = 0;
+
+            playSoftThud();
+            animateAvatar();
+            
+            if (hits >= MAX_HITS) {
+                endStage1();
+            } else {
+                if (Math.random() > 0.3 || hits === 1) {
+                    showFloatingMessage();
+                }
+            }
+        }
+
+        function animateAvatar() {
+            avatar.classList.remove('squash', 'shake', 'dizzy');
+            void avatar.offsetWidth;
+            const reaction = Math.random() > 0.5 ? 'squash' : 'shake';
+            avatar.classList.add(reaction);
+            avatar.classList.add('dizzy');
+            setTimeout(() => {
+                avatar.classList.remove('dizzy');
+            }, 600);
+        }
+
+        function showFloatingMessage() {
+            const msgContainer = document.createElement('div');
+            msgContainer.classList.add('message-bubble');
+            let msgText = "";
+            if (hits === 1) msgText = messages[0];
+            else if (hits === Math.floor(MAX_HITS / 2)) msgText = messages[3];
+            else {
+                const availableMessages = messages.slice(1, messages.length - 1);
+                msgText = availableMessages[Math.floor(Math.random() * availableMessages.length)];
+            }
+            msgContainer.textContent = msgText;
+            const randomX = (Math.random() * 40) - 20;
+            msgContainer.style.transform = `translate(${randomX}px, 20px)`;
+            scene.appendChild(msgContainer);
+            setTimeout(() => msgContainer.remove(), 2000);
+        }
+
+        function endStage1() {
+            isStage1Active = false;
+            counterUI.style.opacity = 0;
+            setTimeout(() => {
+                transitionScreen.classList.remove('hidden');
+            }, 1000);
+        }
+
+        avatar.addEventListener('mousedown', handleInteraction);
+        avatar.addEventListener('touchstart', handleInteraction);
+
+        // ========== STAGE TRANSITION ==========
+        function transitionToStage2() {
+            const stage1 = document.getElementById('stage1');
+            const stage2 = document.getElementById('stage2');
+stage1.style.opacity = '0';
+            setTimeout(() => {
+                stage1.style.display = 'none';
+                stage2.classList.remove('stage-hidden');
+            }, 2000);
+        }
+
+        // ========== STAGE 2: HAND TRACKING LOGIC ==========
+        const MAX_SCORE = 50;
+        let score = 0;
+        let isStage2Active = false;
+        let lastShotTime = 0;
+        const SHOT_DELAY = 150;
+        
+        const videoElement = document.getElementsByClassName('input_video')[0];
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const avatar2 = document.getElementById('avatar2');
+        const shield = document.getElementById('shield');
+        const scoreDisplay = document.getElementById('score');
+        const floatMsg = document.getElementById('float-message');
+        const mouth2 = document.getElementById('mouth2');
+        const hud = document.getElementById('hud');
+        const stage2Intro = document.getElementById('stage2-intro');
+        const overlayEnd = document.getElementById('overlay-end');
+        
         let bullets = [];
         let particles = [];
         let handPosition = { x: 0, y: 0, visible: false };
         
-        // Messages based on score milestones
         const dialogues = [
-            { at: 5, text: "Okay... that one hit." },
-            { at: 15, text: "I deserved that." },
-            { at: 25, text: "I wasn't listening properly." },
-            { at: 35, text: "I finally felt what you felt." },
-            { at: 45, text: "I'm sorry, Ridha." }
+            { at: 10, text: "Okay... that one hit." },
+            { at: 20, text: "I deserved that." },
+            { at: 30, text: "I wasn't listening properly." },
+            { at: 40, text: "I finally felt what you felt." },
+            { at: 48, text: "I'm sorry, Ridha." }
         ];
 
-        // --- Core Logic ---
-
-        function startExperience() {
-            document.getElementById('overlay').classList.add('hidden');
-            isGameActive = true;
+        function startStage2() {
+            stage2Intro.classList.add('hidden');
+            isStage2Active = true;
             resizeCanvas();
             initCamera();
             loop();
@@ -389,50 +672,36 @@
         }
         window.addEventListener('resize', resizeCanvas);
 
-        // --- MediaPipe Setup ---
         function onResults(results) {
-            if (!isGameActive) return;
+            if (!isStage2Active) return;
 
-            // Clear canvas
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             
-            // Only tracking one hand
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
-                
-                // Get Index Finger Tip (Landmark 8)
                 const indexTip = landmarks[8];
-                
-                // Convert to canvas coordinates (Mirroring handled by CSS on canvas, but logic needs inversion)
-                // Since canvas is scaleX(-1), x=0 is right visual, x=1 is left visual.
-                // We calculate logic based on raw (0-1), draw based on raw.
                 
                 handPosition.x = indexTip.x * canvasElement.width;
                 handPosition.y = indexTip.y * canvasElement.height;
                 handPosition.visible = true;
 
-                // Draw a guide cursor
                 canvasCtx.beginPath();
                 canvasCtx.arc(handPosition.x, handPosition.y, 10, 0, 2 * Math.PI);
                 canvasCtx.fillStyle = "rgba(255, 183, 178, 0.8)";
                 canvasCtx.fill();
 
-                // Auto-Shoot logic: If hand is visible, shoot hearts
                 const now = Date.now();
                 if (now - lastShotTime > SHOT_DELAY) {
                     spawnBullet(handPosition.x, handPosition.y);
                     lastShotTime = now;
                     playPopSound();
                 }
-
             } else {
                 handPosition.visible = false;
             }
 
-            // Draw Bullets & Particles
             updatePhysics();
-            
             canvasCtx.restore();
         }
 
@@ -460,14 +729,15 @@
             camera.start();
         }
 
-        // --- Physics & Drawing ---
+        function loop() {
+            if (isStage2Active) {
+                requestAnimationFrame(loop);
+            }
+        }
 
         function spawnBullet(x, y) {
-            // Target center screen
             const targetX = canvasElement.width / 2;
             const targetY = canvasElement.height / 2;
-            
-            // Calculate angle
             const angle = Math.atan2(targetY - y, targetX - x);
             const speed = 10;
 
@@ -486,55 +756,28 @@
             canvasCtx.beginPath();
             const topCurveHeight = size * 0.3;
             canvasCtx.moveTo(x, y + topCurveHeight);
-            // top left curve
-            canvasCtx.bezierCurveTo(
-                x, y, 
-                x - size / 2, y, 
-                x - size / 2, y + topCurveHeight
-            );
-            // bottom left curve
-            canvasCtx.bezierCurveTo(
-                x - size / 2, y + (size + topCurveHeight) / 2, 
-                x, y + (size + topCurveHeight) / 2, 
-                x, y + size
-            );
-            // bottom right curve
-            canvasCtx.bezierCurveTo(
-                x, y + (size + topCurveHeight) / 2, 
-                x + size / 2, y + (size + topCurveHeight) / 2, 
-                x + size / 2, y + topCurveHeight
-            );
-            // top right curve
-            canvasCtx.bezierCurveTo(
-                x + size / 2, y, 
-                x, y, 
-                x, y + topCurveHeight
-            );
+            canvasCtx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+            canvasCtx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 2, x, y + size);
+            canvasCtx.bezierCurveTo(x, y + (size + topCurveHeight) / 2, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+            canvasCtx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
             canvasCtx.fill();
         }
 
         function updatePhysics() {
             const centerX = canvasElement.width / 2;
             const centerY = canvasElement.height / 2;
-            const avatarRadius = 80; // approx
+            const avatarRadius = 80;
 
-            // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 let b = bullets[i];
                 b.x += b.vx;
                 b.y += b.vy;
-
                 drawHeart(b.x, b.y, b.size, b.color);
 
-                // Collision detection with center Avatar
                 const dist = Math.hypot(b.x - centerX, b.y - centerY);
-                
                 if (dist < avatarRadius) {
-                    // HIT!
                     handleHit();
                     bullets.splice(i, 1);
-                    
-                    // Spawn particles
                     for(let j=0; j<5; j++) {
                         particles.push({
                             x: b.x,
@@ -547,59 +790,74 @@
                 }
             }
 
-            // Update Particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
                 p.life -= 0.05;
-                
                 canvasCtx.globalAlpha = p.life;
                 canvasCtx.fillStyle = "#ffb7b2";
                 canvasCtx.beginPath();
                 canvasCtx.arc(p.x, p.y, 3, 0, Math.PI*2);
                 canvasCtx.fill();
                 canvasCtx.globalAlpha = 1.0;
-
                 if (p.life <= 0) particles.splice(i, 1);
             }
         }
 
-        // --- Logic Interactions ---
-
         function handleHit() {
-            if (!isGameActive) return;
+            if (!isStage2Active) return;
 
             score++;
             scoreDisplay.innerText = score;
             
-            // Visual reactions
-            avatar.classList.remove('wobble');
+            avatar2.classList.remove('wobble');
             shield.classList.remove('hit');
-            void avatar.offsetWidth; // Trigger reflow
-            avatar.classList.add('wobble');
+            void avatar2.offsetWidth;
+            avatar2.classList.add('wobble');
             shield.classList.add('hit');
             playHitSound();
 
-            // Avatar expression change
-            if(score % 2 === 0) mouth.style.borderRadius = "20px 20px 0 0"; // Frown
-            else mouth.style.borderRadius = "0 0 20px 20px"; // Neutral
+            if(score % 2 === 0) mouth2.style.borderRadius = "20px 20px 0 0";
+            else mouth2.style.borderRadius = "0 0 20px 20px";
 
-            // Decrease shield opacity to simulate cracking
             let shieldHealth = 1 - (score / MAX_SCORE);
             shield.style.opacity = Math.max(0.1, shieldHealth);
 
-            // Check for dialogue trigger
             const dialogue = dialogues.find(d => d.at === score);
             if (dialogue) {
-                showFloatMessage(dialogue.text);
+                showStage2Message(dialogue.text);
             }
 
             if (score >= MAX_SCORE) {
-                endGame();
+                endStage2();
             }
         }
 
-        function showFloatMessage(text) {
+        function showStage2Message(text) {
             floatMsg.innerText = text;
-            floatM
+            floatMsg.classList.add('show');
+            setTimeout(() => {
+                floatMsg.classList.remove('show');
+            }, 3000);
+        }
+
+        function endStage2() {
+            isStage2Active = false;
+            hud.style.opacity = 0;
+            setTimeout(() => {
+                overlayEnd.classList.remove('hidden');
+            }, 2000);
+        }
+
+        function finishExperience() {
+            const btn = overlayEnd.querySelector('button');
+            btn.textContent = "Message sent ♥";
+            btn.style.backgroundColor = "#cdb4db";
+            btn.style.pointerEvents = "none";
+        }
+
+    </script>
+</body>
+</html>
+ 
