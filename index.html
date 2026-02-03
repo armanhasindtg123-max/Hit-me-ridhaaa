@@ -426,7 +426,7 @@
 
         <div class="overlay hidden" id="transition-screen">
             <div class="final-text">I can take the hits.<br>Now let me show you something deeper.</div>
-            <button onclick="transitionToStage2()">I'm ready to understand</button>
+            <button onclick="transitionToStage2()">Lemme Kill This Fool</button>
         </div>
     </div>
 
@@ -453,7 +453,7 @@
 
             <div id="ui-layer">
                 <div class="hud" id="hud">
-                    <div class="counter-label">Feelings I Didn't Understand</div>
+                    <div class="counter-label">Feeling I Didn't Understand Of u</div>
                     <div class="counter-value" id="score">0</div>
                 </div>
             </div>
@@ -469,7 +469,7 @@
         <div class="overlay hidden" id="overlay-end">
             <div class="final-text">
                 Your feelings hit me harder than anything.<br>
-                I understand you better now.
+                I regret what i did to u yesterday.. don't forgive me... but accept i regretting 
             </div>
             <button onclick="finishExperience()">Talk to me when you're ready</button>
         </div>
@@ -528,11 +528,11 @@
             "I deserved that one.",
             "I didn't listen properly, did I?",
             "I'm sorry, Ridha.",
-            "I was being stubborn.",
+            "I was being jealous",
             "I understand now how it hurt.",
             "I promise to do better.",
             "I miss us being okay.",
-            "One more for good measure?",
+            "One more hit maybe fix me?",
             "Okay, okay, I get it..."
         ];
 
@@ -619,8 +619,9 @@
         // ========== STAGE TRANSITION ==========
         function transitionToStage2() {
             const stage1 = document.getElementById('stage1');
-            const stage2 = document.getElementById('stage2');
-stage1.style.opacity = '0';
+           const stage2 = document.getElementById('stage2');
+            
+            stage1.style.opacity = '0';
             setTimeout(() => {
                 stage1.style.display = 'none';
                 stage2.classList.remove('stage-hidden');
@@ -860,4 +861,3 @@ stage1.style.opacity = '0';
     </script>
 </body>
 </html>
- 
